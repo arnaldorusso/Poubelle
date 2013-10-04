@@ -81,30 +81,26 @@ def explot(var):
         margin = 0.05
         width = (1.-2.*margin)/3
         
-        rects1 = ax.bar((ind+margin), pic['xcontrol'] , width=width,
+        rects1 = ax.bar((ind+margin), pic['xcontrol'] , width=width,\
             facecolor='#000000',yerr=pic['econtrol'] , ecolor='black')
-        rects2 = ax.bar((ind+margin+width), pic['xferro'], width=width,
+        rects2 = ax.bar((ind+margin+width), pic['xferro'], width=width,\
             facecolor='#BEBEBE',  yerr=pic['eferro'], ecolor='black')
-        rects3 = ax.bar((ind+margin+2*(width)), pic['xdfa'],
-            width=width,   facecolor='#777777', yerr=pic['edfa'],
+        rects3 = ax.bar((ind+margin+2*(width)), pic['xdfa'],\
+            width=width,   facecolor='#777777', yerr=pic['edfa'],\
             ecolor='black')
         
-        ax.set_ylabel(pic['name'] + r"$ (mg . m{^3})$")
+        ax.set_ylabel(pic['name'] + r"$ (\mu g . m{^3})$")
         ax.set_title(pic['local']+' - '+'Pigment ' + pic['name'])
         ax.set_xticks(ind+(1.7*width))
         ax.set_xticklabels( ('0', '3', '6') )
         ax.set_xlabel('days')
-        ax.legend( (rects1[0], rects2[0], rects3[0]), ('control', '+Fe', '+DFA'), loc='best' )
+        ax.legend( (rects1[0], rects2[0], rects3[0]), ('control',\
+        '+Fe', '+DFA'), loc='best' )
 
-        figname = pic['name']+pic['local']+'.png'
-        outdir = 'figs_'+pic['local']
+        figname = (pic['name']+pic['local']+'.png')
+        outdir = ('figs_'+pic['local'])
         
         if not os.path.isdir(outdir):
             os.makedirs(outdir)
-                
-        plt.savefig(outdir/figname)
-        #plt.show()
 
-
-
-
+        plt.savefig(os.path.join(outdir,figname))
