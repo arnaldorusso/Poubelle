@@ -10,17 +10,17 @@ from itertools import islice
 from scipy.stats import nanmean, nanstd
 from rpy import r
 
-def charge(file):
-    dat = np.genfromtxt(file, names=True, dtype=None)
-    
-    return dat
-
-
-dat = charge('pigments.csv')
+filename = 'pigments.csv'
+dat = np.genfromtxt(filename, names=True, dtype=None)
 
 dicts = []
 nd = {}
-for k in dat.dtype.names[4:]: # 'Tratamento','Local','Tempo','Replica'
+parse = ['Tratamento','Local','Tempo','Replica']
+
+for k in dat.dtype.names:
+    if k in parse:
+        continue
+        
     nd[k] = []
     nd['name'] = k
     nd['local'] = dat['Local'][0]
