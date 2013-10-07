@@ -104,3 +104,73 @@ def explot(var):
             os.makedirs(outdir)
 
         plt.savefig(os.path.join(outdir,figname))
+        plt.clf()
+
+
+def explot_chla(var):
+    '''
+    Export Plots of pigments padronized by chlorophyll-a.
+    
+    INPUT
+    -----
+    var : List of dictionaries, containing pigments information.
+
+    OUTPUT
+    ------
+    Save plots as *.png, in specific folder.
+    '''
+
+    ch_c0 = var[0]['ct0']
+    ch_c1 = var[0]['ct1']
+    ch_c2 = var[0]['ct2']
+    ch_f0 = var[0]['ft0']
+    ch_f1 = var[0]['ft1']
+    ch_f2 = var[0]['ft2']
+    ch_d0 = var[0]['dt0']
+    ch_d1 = var[0]['dt1']
+    ch_d2 = var[0]['dt2']
+    
+    for pic in var:
+        xpic_c = [nanmean(pic['ct0']/ch_c0), nanmean(pic['ct1']/ch_c1), nanmean(pic['ct2']/ch_c2)]
+
+        epic_c = [nanstd(pic['ct0']/ch_c0), nanstd(pic['ct1']/ch_c1), nanstd(pic['ct2']/ch_c2)]
+
+        xpic_f = [nanmean(pic['ft0']/ch_f0), nanmean(pic['ft1']/ch_f1), nanmean(pic['ft2']/ch_f2)]
+
+        epic_f = [nanstd(pic['ft0']/ch_f0), nanstd(pic['ft1']/ch_f1), nanstd(pic['ft2']/ch_f2)]
+
+        xpic_d = [nanmean(pic['dt0']/ch_d0), nanmean(pic['dt1']/ch_d1), nanmean(pic['dt2']/ch_d2)]
+        
+        epic_d = [nanstd(pic['dt0']/ch_d0), nanstd(pic['dt1']/ch_d1), nanstd(pic['dt2']/ch_d2)]
+
+        ind = np.array([0, 2, 4])  # x locations for the groups
+        width = 0.35       # bars width
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        
+        margin = 0.05
+        width = (1.-2.*margin)/3
+        
+        rects1 = ax.bar((ind+margin), xpic_c , width=width, facecolor='#000000',yerr=epic_c , ecolor='black')
+
+        rects2 = ax.bar((ind+margin+width), xpic_f, width=width,  facecolor='#BEBEBE',  yerr=epic_f, ecolor='black')
+
+        rects3 = ax.bar((ind+margin+2*(width)), xpic_d, width=width,   facecolor='#777777', yerr=epic_d, ecolor='black')
+        
+        ax.set_ylabel(pic['name'] + r"$ (\mu g . m{^3})$")
+        ax.set_title(pic['local']+' - '+ pic['name'] +'/Chl-a')
+        ax.set_xticks(ind+(1.7*width))
+        ax.set_xticklabels( ('0', '3', '6') )
+        ax.set_xlabel('days')
+        ax.legend( (rects1[0], rects2[0], rects3[0]), ('control',\
+        '+Fe', '+DFA'), loc='best' )
+
+        figname = (pic['name']+pic['local']+'Chla'+'.png')
+        outdir = ('figs_chla'+pic['local'])
+        
+        if not os.path.isdir(outdir):
+            os.makedirs(outdir)
+
+        plt.savefig(os.path.join(outdir,figname))
+        plt.clf()
