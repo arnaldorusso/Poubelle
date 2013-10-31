@@ -9,12 +9,13 @@ from scipy.stats import nanmean, nanstd
 
 def extract_pigments(indir):
     '''
-    extract pigments data of *.cnv files, and return a list of
+    extract pigments data of *.csv files, and return a list of
     dictionaries.
 
     INPUT
     -----
-    indir : string of specific directory
+    indir : str 
+    string of specific directory
 
     OUTPUT
     ------
@@ -64,11 +65,12 @@ def explot(var):
     
     INPUT
     -----
-    var : List of dictionaries, containing pigments information.
+    var : List of dictionaries
+    List of dictionaries containing pigments information.
 
     OUTPUT
     ------
-    Save plots as *.png, in specific folder.
+    Save plots as *.png, in specific folder, named as sited choice.
     '''
     for pic in var:
     
