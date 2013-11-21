@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import glob
 import os
@@ -23,32 +24,37 @@ def extract_pigments(filename):
 
     '''
     dicts = []
+    if type(filename) == 'str':
+
     #for filename in sorted(glob.glob(os.path.join(indir, '*csv'))):
-        #dat = np.genfromtxt(filename, names=True, dtype=None)
-    filename = str(filename)
-    dat = pd.read_table(filename)
+        #
+        filename = str(filename)
+        dat = np.genfromtxt(filename, names=True, dtype=None)
+        lista = dat.dtype.names
+    else:
+        dat = filename
+        lista = dat.keys()
     
-    
-    #dicts = []
+    dicts = []
     nd = {}
     parse = ['station','treatment','time']
     
-    for k in dat.dtype.names:
+    for k in lista:
         if k in parse:
             continue
             
         nd[k] = []
         nd['name'] = k
-        nd['local'] = dat['Local'][0]
+        nd['local'] = dat['station'][0]
         nd['ct0'] = dat[k][(dat['treatment']=='Initial')]
-        nd['ct1'] = dat[k][(dat['treatment']=='Control') & (dat['Tempo']=='T1')]
-        nd['ct2'] = dat[k][(dat['treatment']=='Control') & (dat['Tempo']=='T2')]
+        nd['ct1'] = dat[k][(dat['treatment']=='Control') & (dat['time']=='T1')]
+        nd['ct2'] = dat[k][(dat['treatment']=='Control') & (dat['time']=='T2')]
         nd['ft0'] = dat[k][(dat['treatment']=='Initial')]
-        nd['ft1'] = dat[k][(dat['treatment']=='Fe') & (dat['Tempo']=='T1')]
-        nd['ft2'] = dat[k][(dat['treatment']=='Fe') & (dat['Tempo']=='T2')]
+        nd['ft1'] = dat[k][(dat['treatment']=='Fe') & (dat['time']=='T1')]
+        nd['ft2'] = dat[k][(dat['treatment']=='Fe') & (dat['time']=='T2')]
         nd['dt0'] = dat[k][(dat['treatment']=='Initial')]
-        nd['dt1'] = dat[k][(dat['treatment']=='DFA') & (dat['Tempo']=='T1')]
-        nd['dt2'] = dat[k][(dat['treatment']=='DFA') & (dat['Tempo']=='T2')]
+        nd['dt1'] = dat[k][(dat['treatment']=='DFA') & (dat['time']=='T1')]
+        nd['dt2'] = dat[k][(dat['treatment']=='DFA') & (dat['time']=='T2')]
         nd['xcontrol'] = np.append(nanmean(nd['ct0']),(nanmean(nd['ct1']), nanmean(nd['ct2'])))
         nd['xferro'] = np.append(nanmean(nd['ft0']),(nanmean(nd['ft1']), nanmean(nd['ft2'])))
         nd['xdfa'] = np.append(nanmean(nd['dt0']),(nanmean(nd['dt1']), nanmean(nd['dt2'])))
