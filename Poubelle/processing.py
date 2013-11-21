@@ -7,9 +7,9 @@ import glob
 import os
 from scipy.stats import nanmean, nanstd
 
-def extract_pigments(indir):
+def extract_pigments(filename):
     '''
-    extract pigments data of *.csv files, and return a list of
+    extract pigments data of *.txt files, and return a list of
     dictionaries.
 
     INPUT
@@ -23,38 +23,41 @@ def extract_pigments(indir):
 
     '''
     dicts = []
-    for filename in sorted(glob.glob(os.path.join(indir, '*csv'))):
-        dat = np.genfromtxt(filename, names=True, dtype=None)
-        
-        #dicts = []
+    #for filename in sorted(glob.glob(os.path.join(indir, '*csv'))):
+        #dat = np.genfromtxt(filename, names=True, dtype=None)
+    filename = str(filename)
+    dat = pd.read_table(filename)
+    
+    
+    #dicts = []
+    nd = {}
+    parse = ['station','treatment','time']
+    
+    for k in dat.dtype.names:
+        if k in parse:
+            continue
+            
+        nd[k] = []
+        nd['name'] = k
+        nd['local'] = dat['Local'][0]
+        nd['ct0'] = dat[k][(dat['treatment']=='Initial')]
+        nd['ct1'] = dat[k][(dat['treatment']=='Control') & (dat['Tempo']=='T1')]
+        nd['ct2'] = dat[k][(dat['treatment']=='Control') & (dat['Tempo']=='T2')]
+        nd['ft0'] = dat[k][(dat['treatment']=='Initial')]
+        nd['ft1'] = dat[k][(dat['treatment']=='Fe') & (dat['Tempo']=='T1')]
+        nd['ft2'] = dat[k][(dat['treatment']=='Fe') & (dat['Tempo']=='T2')]
+        nd['dt0'] = dat[k][(dat['treatment']=='Initial')]
+        nd['dt1'] = dat[k][(dat['treatment']=='DFA') & (dat['Tempo']=='T1')]
+        nd['dt2'] = dat[k][(dat['treatment']=='DFA') & (dat['Tempo']=='T2')]
+        nd['xcontrol'] = np.append(nanmean(nd['ct0']),(nanmean(nd['ct1']), nanmean(nd['ct2'])))
+        nd['xferro'] = np.append(nanmean(nd['ft0']),(nanmean(nd['ft1']), nanmean(nd['ft2'])))
+        nd['xdfa'] = np.append(nanmean(nd['dt0']),(nanmean(nd['dt1']), nanmean(nd['dt2'])))
+        nd['econtrol'] = np.append(nanstd(nd['ct0']),(nanstd(nd['ct1']), nanstd(nd['ct2'])))
+        nd['eferro'] = np.append(nanstd(nd['ft0']),(nanstd(nd['ft1']), nanstd(nd['ft2'])))
+        nd['edfa'] = np.append(nanstd(nd['dt0']),(nanstd(nd['dt1']), nanstd(nd['dt2'])))
+        if nd:
+            dicts.append(nd)
         nd = {}
-        parse = ['Tratamento','Local','Tempo','Replica']
-        
-        for k in dat.dtype.names:
-            if k in parse:
-                continue
-                
-            nd[k] = []
-            nd['name'] = k
-            nd['local'] = dat['Local'][0]
-            nd['ct0'] = dat[k][(dat['Tratamento']=='INICIO')]
-            nd['ct1'] = dat[k][(dat['Tratamento']=='Controle') & (dat['Tempo']=='T1')]
-            nd['ct2'] = dat[k][(dat['Tratamento']=='Controle') & (dat['Tempo']=='T2')]
-            nd['ft0'] = dat[k][(dat['Tratamento']=='INICIO')]
-            nd['ft1'] = dat[k][(dat['Tratamento']=='Fe') & (dat['Tempo']=='T1')]
-            nd['ft2'] = dat[k][(dat['Tratamento']=='Fe') & (dat['Tempo']=='T2')]
-            nd['dt0'] = dat[k][(dat['Tratamento']=='INICIO')]
-            nd['dt1'] = dat[k][(dat['Tratamento']=='DFA') & (dat['Tempo']=='T1')]
-            nd['dt2'] = dat[k][(dat['Tratamento']=='DFA') & (dat['Tempo']=='T2')]
-            nd['xcontrol'] = np.append(nanmean(nd['ct0']),(nanmean(nd['ct1']), nanmean(nd['ct2'])))
-            nd['xferro'] = np.append(nanmean(nd['ft0']),(nanmean(nd['ft1']), nanmean(nd['ft2'])))
-            nd['xdfa'] = np.append(nanmean(nd['dt0']),(nanmean(nd['dt1']), nanmean(nd['dt2'])))
-            nd['econtrol'] = np.append(nanstd(nd['ct0']),(nanstd(nd['ct1']), nanstd(nd['ct2'])))
-            nd['eferro'] = np.append(nanstd(nd['ft0']),(nanstd(nd['ft1']), nanstd(nd['ft2'])))
-            nd['edfa'] = np.append(nanstd(nd['dt0']),(nanstd(nd['dt1']), nanstd(nd['dt2'])))
-            if nd:
-                dicts.append(nd)
-            nd = {}
 
     return dicts
 
