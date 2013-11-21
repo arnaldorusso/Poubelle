@@ -8,31 +8,29 @@ import glob
 import os
 from scipy.stats import nanmean, nanstd
 
-def extract_pigments(filename):
+def extract_pigments(f):
     '''
     extract pigments data of *.txt files, and return a list of
     dictionaries.
 
     INPUT
     -----
-    indir : str 
-    string of specific directory
+    f : str or pandas object 
+    string of specific .csv file
 
     OUTPUT
     ------
     var: list of dictionaries, containing pigments and informations.
 
     '''
-    dicts = []
-    if type(filename) == 'str':
-
-    #for filename in sorted(glob.glob(os.path.join(indir, '*csv'))):
-        #
-        filename = str(filename)
-        dat = np.genfromtxt(filename, names=True, dtype=None)
+    stringy = str(f)
+    term = stringy[stringy.rfind('.'):stringy.rfind('.')+4]
+    if term == '.csv':
+        dat = np.genfromtxt(stringy, names=True, dtype=None, delimiter=',')
+        print(dat)
         lista = dat.dtype.names
     else:
-        dat = filename
+        dat = f
         lista = dat.keys()
     
     dicts = []
