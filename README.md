@@ -14,6 +14,13 @@ Poubelle
 
 Poubelle scripts. Some useful and useless scripts that should be on a poubelle and rewritten.
 
+About
+-----
+Poubelle is a french word meaning `garbage can`. So those codes are obviusly
+Explicit Trash!
+Read with caution.
+
+
 * Free software: Python Software Foundation License 
 * Documentation: Not yet documented
 
