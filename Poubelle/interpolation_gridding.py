@@ -5,6 +5,7 @@ from matplotlib.mlab import griddata
 from scipy.interpolate import Rbf
 import numpy.ma as ma
 from scipy.io import loadmat
+from oceans.colormaps import cm
 
 
 
@@ -158,7 +159,9 @@ def make_ax(ax, tp):
     return ax, cs
 
 
+# Initial griding
 X, Y = np.meshgrid(loni, lati)
+
 
 tp0, ep0 = scaloa(X, Y, lons, lats, dat, corrlen=1, err=0.1**2)
 
@@ -168,3 +171,180 @@ cbar = fig.colorbar(cs, extend='both', shrink=0.85)
 plt.show()
 
 
+#### More about gridding
+def ll2km(lon, lat, bbox):
+    """xkm, ykm will be the coordinates of the data (converted from lon/lat)."""
+    rearth = 6370800  # Earth radius [m].
+    deg2rad = np.pi/180
+    ykm = rearth * (lat - bbox[2]) * deg2rad / 1000
+    xkm = rearth * ((deg2rad * (lon - bbox[0])) *
+                    np.cos(deg2rad * 0.5 * (lat + bbox[2])) / 1000)
+
+    return xkm, ykm
+
+
+def func(a, x, fx, method='markov'):
+    """Compute the mean squared misfit between an analytical function
+    (e.g. Gaussian or Markov function) and a set of data FX observed at
+    independent coordinates X.
+    
+    http://marine.rutgers.edu/dmcs/ms615/jw_matlab/oi/myfunction.m
+
+    Parameters
+    ----------
+    a : float
+        Parameters of analytically function
+    x : array
+        Locations of data
+    fx : array
+         Observed function values (data).
+
+    method : string
+            Specifies the shape of the function to be fitted:
+            Must be one of 'gauss', 'markov' (default) or 'letra' (LeTraon).
+
+    In all cases, two parameters are fit a[0] is the y-intercept at x=0
+    a[1] is the characteristic scale of the fitted function.
+    """
+
+    # Gaussian function f = a0 * exp(-0.5 * (r/a)**2).
+    if method == 'gauss':
+        r = x / a[1]
+        fit = a[0] * np.exp(-0.5 * r**2)
+    # Markov function f = a0 * (1 + r/a) * exp(-r/a).
+    elif method == 'markov':
+        r = np.abs(x) / a[1]
+        fit = a[0] * (1+r) * np.exp(-r)
+        # Le Traon function f = a0 * exp(-r/a) * (1+r/a+(r**2) / 6-(r**3) / 6.
+    elif 'letra':
+        r = np.abs(x) / a[1]
+        rsq = r**2
+        fit = a[0] * np.exp(-r) * (1 + r + rsq / 6 - (r * rsq) / 6)
+    else:
+        raise ValueError("Unrecognized method {!r}.  Must be one of 'gauss',"
+                         " 'markov' or 'letra'.".format(method))
+
+    return np.mean((fit - fx)**2)
+
+
+def optinter(R, lamb, x, y, data, xdata, ydata, cov_func='markov'):
+    """The code uses optimal interpolation to map irregular spaced observations
+    onto a regular grid.
+    
+    http://marine.rutgers.edu/dmcs/ms615/jw_matlab/oi/oi_mercator.m
+
+    Parameters
+    ----------
+    R : float
+        Square root of the de-correlation length scale in units of deg**2.
+    lambda : float
+                 error squared to signal squared or E.
+    X, Y : array
+           Grid of the locations for theta.
+    data : array
+           Observations.
+    xdata, ydata : array
+           Observed locations.
+
+    Returns
+    -------
+    theta : array
+            Optimal interpolated data.
+    err : array
+          Estimated optimum error.
+    res : array
+          Residue fit.
+    """
+    X, Y = ll2km(*np.meshgrid(x, y), bbox=bbox)
+    
+    # Ars.
+    xkm, ykm = ll2km(xdata, ydata, bbox)
+    xr, yr = np.meshgrid(xkm, ykm)
+
+    # Compute the distance of each data point:
+    rdist = np.sqrt((xr - xr.T)**2 + (yr - yr.T)**2)
+
+    # Covariance function.
+    if cov_func == 'gauss':
+        cdd0 = np.exp(-rdist**2 / R**2)
+    elif cov_func == 'markov':
+        cdd0 = (1 + rdist/R) * np.exp(-rdist/R)
+    else:
+        raise ValueError("Unrecognized covariance function {!r}."
+                         "Must be one of 'gauss' or 'markov'.".format(cov_func))
+
+    # Final Data covariance Matrix between data points.
+    cdd = cdd0 + lamb * np.eye(*cdd0.shape)
+
+    # Cxr.
+    Xd, Xg = np.meshgrid(xkm, X.ravel())
+    Yd, Yg = np.meshgrid(ykm, Y.ravel())
+
+    # Distance between observation r and grid g.
+    rmd = np.sqrt((Xg - Xd)**2 + (Yg - Yd)**2)
+
+    # Again plug into covariance function.
+    if cov_func == 'gauss':
+        cmd = np.exp(-rmd**2 / R**2)
+    elif cov_func == 'markov':
+        cmd = (1 + rmd /R) * np.exp(-rmd/R)
+    else:
+        raise ValueError("Unrecognized covariance function {!r}."
+                         "Must be one of 'gauss' or 'markov'.".format(cov_func))
+
+    demeaned =  data - data.mean()
+    res = data.mean() + np.dot(cdd0, np.linalg.solve(cdd, demeaned))
+    res = data.ravel() - res.ravel()
+
+    # Normalized by the error variance.
+    # err = np.diag(1 - np.dot(np.dot(cmd, np.linalg.inv(cdd)), cmd.T))
+    # err = np.reshape(err, X.shape) * 100  # Error in percentages.
+
+    theta = data.mean() + np.dot(cmd, np.linalg.solve(cdd, demeaned))
+    theta = np.reshape(theta, X.shape)
+
+    return dict(residual=res, 
+#		error=err,
+		covariance=cdd0,
+		final_covariance=cdd,
+		theta=theta)
+
+
+for r in rs[1:]:
+    idx = np.logical_and(Rd.ravel() > r - 0.5 * dr, Rd.ravel() <= r + 0.5 * dr)
+    cf.append(C.ravel()[idx].mean())
+
+
+R = 70  # [km] Overestimation.
+lamb = 0.11
+
+ret = optinter(R, lamb, loni, lati, dat, lons, lats, cov_func='markov')
+
+fig, ax = make_map(bbox=bbox)
+cs = ax.pcolormesh(X, Y, ret['theta'], cmap=cm.avhrr)
+ax.set_title('Too smooth!')
+cbar = fig.colorbar(cs, extend='both', shrink=0.85)
+cdot = ax.scatter(lon, lat, marker='o', c='k', edgecolors='none', zorder=2)
+plt.show()
+
+### Inserting error to compute Markov Chain
+tdat = dat.copy()
+e = 0.75
+tdat += e * np.random.randn(dat.size)
+
+demaned = tdat - tdat.mean()
+C = np.dot(demaned[:, None], demaned[:, None].T)  # Cov.
+
+# Distance to check for the scale.
+dr = 30  # Distance step.
+rs = np.r_[0, np.arange(0.5*dr, 100, dr)]
+
+cf = [np.diag(C).mean()]
+XKM, YKM = ll2km(*np.meshgrid(lons, lats), bbox=bbox)
+Rd = np.sqrt((XKM-XKM.T)**2 + (YKM-YKM.T)**2)
+for r in rs[1:]:
+    idx = np.logical_and(Rd.ravel() > r - 0.5 * dr,
+                         Rd.ravel() <= r + 0.5 * dr)
+    cf.append(C.ravel()[idx].mean())
+
+cf = np.array(cf)  # Observed Covariance Function.
